@@ -1,0 +1,21 @@
+{
+  "name": "groomer-app",
+  "version": "1.0.0",
+  "description": "GROOMER — Luxury Grooming Booking App",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "better-auth": "^1.2.0",
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

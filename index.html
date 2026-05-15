@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>GROOMER — Luxury Grooming</title>
+    <meta name="description"
+        content="GROOMER — Premium mobile grooming & barber booking app. Discover top-rated shops, book appointments, and preview hairstyles with AI." />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <!-- Better Auth Client (fetch-based wrapper) -->
+    <script>
+        window.BetterAuthClient = (function () {
+            const BASE = ''; // same origin
+            const AUTH = BASE + '/api/auth';
+
+            async function request(path, options = {}) {
+                const res = await fetch(AUTH + path, {
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', ...options.headers },
+                    ...options,
+                });
+                const data = await res.json().catch(() => null);
+                if (!res.ok) {
+                    const msg = data?.message || data?.error || res.statusText;
+                    throw new Error(msg);
+                }
+                return data;
+            }
+
+            return {
+                signUp: (email, password, name) =>
+                    request('/sign-up/email', {
+                        method: 'POST',
+                        body: JSON.stringify({ email, password, name }),
+                    }),
+                signIn: (email, password) =>
+                    request('/sign-in/email', {
+                        method: 'POST',
+                        body: JSON.stringify({ email, password }),
+                    }),
+                signOut: () =>
+                    request('/sign-out', { method: 'POST' }),
+                getSession: () =>
+                    request('/get-session', { method: 'GET' }),
+                signInGoogle: async () => {
+                    const data = await request('/sign-in/social', {
+                        method: 'POST',
+                        body: JSON.stringify({ provider: 'google', callbackURL: '/' }),
+                    });
+                    if (data && data.url) {
+                        window.location.href = data.url;
+                    }
+                },
+            };
+        })();
+    </script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#0E0E0E',
+                        gold: '#C9A84C',
+                        goldL: '#E8C97A',
+                        cream: '#F5EDD6',
+                        card: 'rgba(255,255,255,0.04)',
+                        glass: 'rgba(201,168,76,0.15)',
+                    },
+                    fontFamily: {
+                        display: ['Playfair Display', 'serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        /* ── Base ──────────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            background: #0E0E0E;
+            color: #F5EDD6;
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Mobile container ─────────────────────────────────── */
+        #root {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ── Scrollbar hide ───────────────────────────────────── */
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* ── Glass card ────────────────────────────────────────── */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(201, 168, 76, 0.2);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .glass-card-sm {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(201, 168, 76, 0.12);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        /* ── Gold gradient text ────────────────────────────────── */
+        .gold-text {
+            background: linear-gradient(135deg, #C9A84C, #E8C97A);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── Gold shimmer button ──────────────────────────────── */
+        .gold-btn {
+            background: linear-gradient(135deg, #C9A84C, #E8C97A, #C9A84C);
+            background-size: 200% 100%;
+            color: #0E0E0E;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .gold-btn:hover {
+            background-position: 100% 0;
+            transform: translateY(-1px);
+        }
+
+        .gold-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ── Animations ────────────────────────────────────────── */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes logoReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0.6) rotate(-8deg);
+                filter: blur(8px);
+            }
+
+            60% {
+                opacity: 1;
+                transform: scale(1.08) rotate(2deg);
+                filter: blur(0);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -400px 0;
+            }
+
+            100% {
+                background-position: 400px 0;
+            }
+        }
+
+        @keyframes scanLine {
+            0% {
+                top: 0%;
+            }
+
+            50% {
+                top: 95%;
+            }
+
+            100% {
+                top: 0%;
+            }
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(100%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        .anim-fadeUp {
+            animation: fadeUp 0.6s ease both;
+        }
+
+        .anim-logo {
+            animation: logoReveal 1.2s cubic-bezier(.34, 1.56, .64, 1) both;
+        }
+
+        .anim-toast {
+            animation: toastIn 0.35s ease both;
+        }
+
+        .anim-slideUp {
+            animation: slideUp 0.4s ease both;
+        }
+
+        .anim-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .anim-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        .anim-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Skeleton shimmer */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.6s infinite linear;
+            border-radius: 8px;
+        }
+
+        /* Scan line overlay */
+        .scan-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #C9A84C, transparent);
+            animation: scanLine 2.5s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        /* ── Stagger utility ──────────────────────────────────── */
+        .stagger-1 {
+            animation-delay: 0.05s;
+        }
+
+        .stagger-2 {
+            animation-delay: 0.10s;
+        }
+
+        .stagger-3 {
+            animation-delay: 0.15s;
+        }
+
+        .stagger-4 {
+            animation-delay: 0.20s;
+        }
+
+        .stagger-5 {
+            animation-delay: 0.25s;
+        }
+
+        .stagger-6 {
+            animation-delay: 0.30s;
+        }
+
+        .stagger-7 {
+            animation-delay: 0.35s;
+        }
+
+        .stagger-8 {
+            animation-delay: 0.40s;
+        }
+
+        /* ── Input styling ────────────────────────────────────── */
+        .input-gold {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(201, 168, 76, 0.25);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #F5EDD6;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-gold::placeholder {
+            color: rgba(245, 237, 214, 0.35);
+        }
+
+        .input-gold:focus {
+            border-color: #C9A84C;
+        }
+
+        /* ── Toggle switch ────────────────────────────────────── */
+        .toggle-track {
+            width: 48px;
+            height: 26px;
+            border-radius: 13px;
+            background: rgba(255, 255, 255, 0.1);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-track.active {
+            background: #C9A84C;
+        }
+
+        .toggle-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #F5EDD6;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-track.active .toggle-thumb {
+            transform: translateX(22px);
+        }
+
+        /* ── Bottom nav ───────────────────────────────────────── */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            background: rgba(14, 14, 14, 0.92);
+            border-top: 1px solid rgba(201, 168, 76, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 50;
+            padding: 8px 0 env(safe-area-inset-bottom, 8px);
+        }
+
+        /* ── Modal overlay ────────────────────────────────────── */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 60;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal-content {
+            max-width: 430px;
+            width: 100%;
+            max-height: 92vh;
+            background: #1A1A1A;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border: 1px solid rgba(201, 168, 76, 0.2);
+            border-bottom: none;
+            overflow-y: auto;
+        }
+
+        /* ── Star rating ──────────────────────────────────────── */
+        .star {
+            color: #C9A84C;
+        }
+
+        .star-empty {
+            color: rgba(201, 168, 76, 0.25);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <!-- Mock Data -->
+    <script src="src/data/mockData.js"></script>
+
+    <!-- React 18 + ReactDOM + Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- App -->
+    <script type="text/babel" src="src/app.jsx"></script>
+</body>
+
+</html>
